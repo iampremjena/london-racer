@@ -1,4 +1,3 @@
-cat << 'EOF' > src/Controls.js
 export class Controls {
   constructor() {
     this.keys = { forward: false, backward: false, left: false, right: false, brake: false };
@@ -17,4 +16,3 @@ export class Controls {
     }
   }
 }
-EOF

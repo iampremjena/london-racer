@@ -1,4 +1,3 @@
-cat << 'EOF' > src/main.js
 import * as THREE from 'three';
 import { Controls } from './Controls.js';
 
@@ -214,4 +213,3 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-EOF
