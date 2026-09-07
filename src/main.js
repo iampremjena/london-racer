@@ -8,7 +8,6 @@ const menuOverlay = document.getElementById('menu-overlay');
 const startBtn = document.getElementById('start-btn');
 const hud = document.getElementById('hud');
 const speedometer = document.getElementById('speedometer');
-const positionHud = document.getElementById('position');
 
 let gameStarted = false;
 
@@ -49,10 +48,10 @@ const curve = new THREE.CatmullRomCurve3(trackPoints, true);
 const trackGeometry = new THREE.TubeGeometry(curve, 200, 14, 12, true);
 const trackMaterial = new THREE.MeshStandardMaterial({ color: 0x22252e, roughness: 0.5 });
 const trackMesh = new THREE.Mesh(trackGeometry, trackMaterial);
-trackMesh.scale.y = 0.01; // Flatten tube into curved road track
+trackMesh.scale.y = 0.01;
 scene.add(trackMesh);
 
-// --- ENVIRONMENT BUILDINGS & BUSES ALONG CURVES ---
+// --- BUILDINGS ALONG CURVES ---
 const buildingMat = new THREE.MeshStandardMaterial({ color: 0x7a6b5d, roughness: 0.7 });
 for (let i = 0; i < 60; i++) {
   const t = i / 60;
@@ -65,32 +64,34 @@ for (let i = 0; i < 60; i++) {
   scene.add(building);
 }
 
-// --- CAR LOADERS (Player & AI Opponents) ---
-const loader = new GLTFLoader();
-
+// --- PLAYER CAR & GLTF LOADING ---
 let playerCarGroup = new THREE.Group();
 scene.add(playerCarGroup);
 
-// Fallback procedural high-detail car if GLTF is downloading
+// Fallback high-spec procedural car
 const fallbackBody = new THREE.Mesh(
   new THREE.BoxGeometry(2.0, 0.7, 4.0),
-  new THREE.MeshStandardMaterial({ color: 0xcc0000, metalness: 0.8, roughness: 0.2 })
+  new THREE.MeshStandardMaterial({ color: 0xcc0000, metalness: 0.85, roughness: 0.15 })
 );
 fallbackBody.position.y = 0.6;
 playerCarGroup.add(fallbackBody);
 
-// Load High-Quality 3D Car GLTF
+// Safe GLTF Loader with local relative pathing
+const loader = new GLTFLoader();
 loader.load(
-  '/assets/models/car.glb',
+  './assets/models/car.glb',
   (gltf) => {
     playerCarGroup.remove(fallbackBody);
     const model = gltf.scene;
     model.scale.set(0.9, 0.9, 0.9);
     model.position.y = 0.1;
     playerCarGroup.add(model);
+    console.log("3D Car model loaded successfully!");
   },
   undefined,
-  (err) => console.log('Using default high-spec material racer model.')
+  (err) => {
+    console.warn('GLTF load fallback active:', err);
+  }
 );
 
 // --- AI OPPONENT RACERS ---
@@ -113,8 +114,6 @@ aiColors.forEach((color, idx) => {
 // --- CONTROLS & AUDIO ---
 const controls = new Controls();
 const audio = new AudioController();
-
-let playerProgress = 0;
 let speed = 0;
 
 // --- START GAME CLICK EVENT ---
@@ -129,7 +128,6 @@ function animate() {
   requestAnimationFrame(animate);
 
   if (gameStarted) {
-    // Player Acceleration & Driving Logic
     if (controls.keys.forward) speed = Math.min(speed + 0.02, 1.4);
     else if (controls.keys.backward) speed = Math.max(speed - 0.02, -0.4);
     else speed *= 0.98;
@@ -145,7 +143,7 @@ function animate() {
     playerCarGroup.translateZ(speed);
     audio.update(speed, controls.keys.brake);
 
-    // AI Racers Progress along track curve
+    // AI Racers along track
     aiCars.forEach(ai => {
       ai.progress = (ai.progress + ai.speed) % 1;
       const pt = curve.getPoint(ai.progress);
@@ -155,15 +153,14 @@ function animate() {
       ai.group.lookAt(pt.clone().add(tangent));
     });
 
-    // Update HUD Stats
     speedometer.innerText = `${Math.round(Math.abs(speed) * 120)} KM/H`;
 
-    // Smooth Third-Person Camera Chase
+    // Camera follow
     const camOffset = new THREE.Vector3(0, 4, -10).applyAxisAngle(new THREE.Vector3(0, 1, 0), playerCarGroup.rotation.y);
     camera.position.copy(playerCarGroup.position).add(camOffset);
     camera.lookAt(playerCarGroup.position.clone().add(new THREE.Vector3(0, 1, 4).applyAxisAngle(new THREE.Vector3(0, 1, 0), playerCarGroup.rotation.y)));
   } else {
-    // Menu background slow orbit camera
+    // Menu background camera rotation
     const time = Date.now() * 0.0005;
     camera.position.set(Math.cos(time) * 30, 15, Math.sin(time) * 30);
     camera.lookAt(0, 0, 0);
