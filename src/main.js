@@ -152,7 +152,7 @@ startBtn.addEventListener("click", () => {
   gameStarted = true;
 });
 
-// --- GAME LOOP (120 FPS HIGH PERFORMANCE) ---
+// --- GAME LOOP ---
 function animate() {
   requestAnimationFrame(animate);
 
@@ -173,7 +173,6 @@ function animate() {
     wheels.forEach(w => w.rotation.x += speed * 2.5);
     audio.update(speed);
 
-    // AI Racers driving along spline curve
     aiCars.forEach(ai => {
       ai.progress = (ai.progress + ai.speed) % 1;
       const pt = curve.getPoint(ai.progress);
@@ -184,12 +183,10 @@ function animate() {
 
     speedometer.innerText = `${Math.round(Math.abs(speed) * 120)} KM/H`;
 
-    // Dynamic Camera Tracking
     const camOffset = new THREE.Vector3(0, 3.8, -10).applyAxisAngle(new THREE.Vector3(0, 1, 0), playerCarGroup.rotation.y);
     camera.position.copy(playerCarGroup.position).add(camOffset);
     camera.lookAt(playerCarGroup.position.clone().add(new THREE.Vector3(0, 1, 4).applyAxisAngle(new THREE.Vector3(0, 1, 0), playerCarGroup.rotation.y)));
   } else {
-    // Menu Camera Orbit
     const time = Date.now() * 0.0005;
     camera.position.set(Math.cos(time) * 40, 20, Math.sin(time) * 40);
     camera.lookAt(0, 0, 0);
